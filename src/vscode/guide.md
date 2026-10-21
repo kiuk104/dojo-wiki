@@ -128,7 +128,9 @@ fatal: could not read Username for 'https://github.com'
 창이 안 뜨면 Git for Windows 를 다시 설치하면서 **Git Credential Manager** 를 켜기.
 
 ### 왜 그런가
-로그인 정보는 **컴퓨터마다 따로** 저장돼요(Windows 자격 증명 관리자). 렌더팜 PC마다 라이선스를 따로 등록하는 것과 같아요. Claude가 쓰는 작업 공간은 내 PC와 다른 컴퓨터라 거기엔 로그인이 없어서, push 만 내 PC에서 해요.
+로그인 정보는 **컴퓨터마다 따로** 저장돼요(Windows 자격 증명 관리자). 렌더팜 PC마다 라이선스를 따로 등록하는 것과 같아요.
+
+Claude 데스크탑 앱의 Claude는 내 PC 폴더를 빌려 쓰는 **별도 리눅스 환경**이라, 거기서 `git push` 하면 이 에러가 나요. 대신 Claude 쪽 **클라우드 작업 공간**은 연결된 GitHub 계정으로 push 할 수 있어서, Claude가 PC에서 커밋 → 클라우드에서 push → PC에 `git pull` 순서로 자동으로 올려요. (fokus-spiel 의 `Claude` 커밋도 이 길로 올라간 것)
 
 > ⚠️ 주의: 비밀번호나 토큰(ghp_…)을 채팅·코드·파일에 붙여넣지 않기.
 

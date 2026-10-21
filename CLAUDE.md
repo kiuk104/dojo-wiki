@@ -40,3 +40,11 @@ python build.py              # 전체 (로컬 미리보기)
 python build.py vscode       # 한 분류만
 python push.py -m "메시지"    # 커밋 + push  (push_github.bat 과 같음)
 ```
+
+## Claude 데스크탑(원격 세션)에서 push 하기
+기기 셸(device_bash)에는 GitHub 로그인이 없어서 `python push.py` 의 push 단계가 `could not read Username` 으로 실패한다. 이때:
+1. 기기에서 md 수정 → `python build.py` → 커밋 (작성자: `git log -1` 의 이름/이메일을 GIT_AUTHOR_*/GIT_COMMITTER_* 로 넘김). `.git/index.lock` 이 남으면 삭제 권한 요청 후 지움.
+2. `git format-patch origin/main -o <임시폴더>` → 패치를 클라우드로 stage.
+3. 클라우드: `add_repo kiuk104/dojo-wiki (push)` → `git clone --depth 1` → `git am <패치>` → `git push origin main`.
+4. 기기: `git pull --rebase origin main` 으로 맞춤 (같은 내용이라 깔끔히 합쳐짐).
+
