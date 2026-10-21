@@ -39,6 +39,16 @@ ch00-l07-terminal-location.js
 └ 챕터 번호
 ```
 
+### 코딩Dojo에서 바로 복사하기
+레슨 제목 바로 아래에 **📄 예제 파일** 이 나온다. 이름을 누르면 복사된다.
+
+```
+📄 예제 파일  dojo-practice\ch00-vscode-clinic\  ch00-l07-terminal-location.js
+```
+
+VS Code 탐색기에서 해당 폴더 우클릭 → **새 파일** → `Ctrl + V` → Enter.
+(이름 목록은 `coding-classroom\chapters\file-names.js` — 새 레슨이 생기면 여기에 한 줄 추가)
+
 ### 규칙 6가지
 1. **숫자 앞에 0** — `l7` ❌ → `l07` ✅ (0이 없으면 `l1, l10, l11, l2 …` 순서로 정렬된다)
 2. **띄어쓰기 대신 -** — `node terminal location.js` ❌ → `node terminal-location.js` ✅
