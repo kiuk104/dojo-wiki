@@ -60,6 +60,21 @@ PS E:\Coding\dojo-practice> cd ch00-vscode-clinic
 PS E:\Coding\dojo-practice\ch00-vscode-clinic> node ch00-l07-terminal-location.js
 ```
 
+### 명령어와 띄어쓰기 — 왜 `cd ..` 일까?
+터미널 한 줄은 **`명령` + 빈칸 + `재료(인자)`** 로 읽혀요. 빈칸이 둘을 나누는 **칸막이**예요.
+
+| 입력 | 터미널이 읽는 방식 |
+|---|---|
+| `cd ..` | 명령 `cd`(이동해라) + 재료 `..`(한 칸 위 폴더) ✅ |
+| `cd fokus-karten` | 명령 `cd` + 재료 `fokus-karten` ✅ |
+| `cd..` | 한 단어 `cd..` → 그런 명령 없음 ❌ (PowerShell은 봐주기도 하지만 습관 들이지 말기) |
+| `npm run dev` | 명령 `npm` + 재료 `run`, `dev` |
+
+- `..` = **한 칸 위(부모) 폴더**, `.` = **지금 폴더**.
+- 폴더 이름에 빈칸이 있으면 따옴표로 묶어 한 덩어리로: `cd "Fokus MLB"`
+
+> 💡 꿀팁: 3D 프로그램 단축 입력과 같아요. `이동 X 2` 처럼 **도구 이름**과 **값**을 띄어 쓰는 것처럼, `cd`(도구)와 `..`(값)도 띄어 써요.
+
 ### 자주 보는 에러 — ENOENT
 `ENOENT` = "그런 파일 없음" → 위치가 틀렸거나 파일 이름 오타.
 
