@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko" data-game="{{GAME_ID}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="{{DESC}}">
+<title>{{TITLE}} · Dojo Wiki</title>
+<meta name="cd-build" content="{{BUILD}}">
+<script>try{var _t=localStorage.getItem('cd-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);var _f=localStorage.getItem('cd-fs');if(_f)document.documentElement.style.setProperty('--fs',_f);var _w=+localStorage.getItem('cd-sbw');if(_w>=220&&_w<=480)document.documentElement.style.setProperty('--sb-w',_w+'px');if(localStorage.getItem('cd-sb')==='collapsed')document.documentElement.classList.add('sb-collapsed');}catch(e){}</script>
+<script src="../shared/fonts.js?v={{V}}"></script>
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f2f3ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121514" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/svg+xml" href="../icons/favicon.svg">
+<link rel="icon" type="image/png" href="../icons/icon-192.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dojo Wiki">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../shared/fokus.css?v={{V}}">
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<div class="shell">
+<aside class="side" id="side">
+  <div class="brand">
+    <div class="game-en">{{GAME_EN}}</div>
+    <h1 title="{{TITLE}}">{{TITLE}}</h1>
+    <div class="sub">{{BRAND_SUB}}</div>
+  </div>
+  <nav id="nav">
+{{NAV}}
+  </nav>
+</aside>
+<div class="sb-handle" id="sbHandle" role="separator" aria-orientation="vertical" aria-label="목차 숨기기 · 드래그하여 너비 조절"></div>
+<div class="sb-tip" id="sbTip">목차 숨기기<kbd>Ctrl+B</kbd><small>드래그하여 너비 조절</small></div>
+<main class="main">
+  <div class="topbar" id="topbar">
+    <button class="btn" id="menuBtn" aria-label="목차 열기">☰ 목차</button>
+    <a class="home" href="../" title="Dojo Wiki 홈"><img src="../icons/icon-192.png" alt=""><span class="home-t">Dojo Wiki</span></a>
+    <span class="tb-sp"></span>
+    <div class="search" id="searchBox" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="{{SEARCH_HINT}}" autocomplete="off">
+      <span class="hits" id="hits"></span>
+      <button class="xbtn" id="searchClose" aria-label="검색 닫기">✕</button>
+    </div>
+    <button class="btn icon" id="bmBtn" aria-label="북마크" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg><span class="bm-count" id="bmCount" hidden></span></button>
+    <button class="btn icon" id="searchBtn" aria-label="검색" title="검색 ( / )"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+{{EXTRA_LINKS}}
+    <button class="btn icon" id="setBtn" aria-label="설정" aria-haspopup="dialog" aria-expanded="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </div>
+  <div class="setpanel bmpanel" id="bmPanel" role="dialog" aria-label="북마크" hidden>
+    <div class="bm-hd"><b>북마크</b><span class="bm-sync" id="bmSync">이 기기에 저장</span></div>
+    <ul class="bm-list" id="bmList"></ul>
+    <p class="sp-note" id="bmEmpty">제목 옆 <b>☆</b>를 누르면 여기에 저장돼요.</p>
+  </div>
+  <div class="setpanel" id="setPanel" role="dialog" aria-label="설정" hidden>
+    <div class="sp-row"><span class="sp-lab">테마</span>
+      <div class="seg" id="segTheme" role="group" aria-label="테마">
+        <button data-v="system">시스템</button><button data-v="light">라이트</button><button data-v="dark">다크</button>
+      </div></div>
+    <div class="sp-row"><span class="sp-lab">글자 크기</span>
+      <div class="seg" id="segFs" role="group" aria-label="글자 크기">
+        <button data-v="0.9">작게</button><button data-v="1">보통</button><button data-v="1.12">크게</button><button data-v="1.25">아주 크게</button>
+      </div></div>
+    <div class="sp-row"><span class="sp-lab">계정</span>
+      <div class="sp-acct"><button type="button" id="acctBtn" hidden>구글로 로그인</button><span id="acctInfo">불러오는 중…</span></div></div>
+    <div class="sp-row"><span class="sp-lab">앱</span>
+      <div class="sp-app"><button type="button" id="reloadBtn">↻ 새로고침</button><span id="buildInfo"></span></div></div>
+    <p class="sp-note">테마·글자 크기는 이 기기에 저장되고, 모든 위키 페이지에 같이 적용돼요.</p>
+  </div>
+  <div class="wrap">
+{{STATUS}}
+    <div id="content">
+{{CONTENT}}
+    </div>
+    <div class="empty" id="empty" hidden>검색 결과가 없습니다.</div>
+    <p class="foot">{{FOOT}}</p>
+  </div>
+</main>
+</div>
+<script>window.FS_ROOT='../';window.FSG={{FSG_JSON}};</script>
+<script src="../shared/core.js?v={{V}}"></script>
+<script src="../shared/guide.js?v={{V}}"></script>
+<script type="module" src="../shared/sync.js?v={{V}}"></script>
+</body>
+</html>

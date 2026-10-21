@@ -1,0 +1,55 @@
+{
+  "name": "Dojo Wiki",
+  "short_name": "Dojo Wiki",
+  "description": "개인 코딩 위키 — 코딩을 배우며 막혔던 것과 알게 된 것",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#121514",
+  "theme_color": "#255e66",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "VS Code · 터미널",
+      "short_name": "VS Code",
+      "url": "./vscode/guide.html",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "JavaScript",
+      "short_name": "JS",
+      "url": "./javascript/guide.html",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

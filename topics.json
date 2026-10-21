@@ -1,0 +1,44 @@
+[
+ {
+  "id": "vscode",
+  "name": "VS Code · 터미널",
+  "en": "VS Code & Terminal",
+  "title": "VS Code · 터미널 노트",
+  "mono": "V",
+  "brand_sub": "에디터 · PowerShell · 윈도우",
+  "desc": "VS Code 사용법, 터미널 명령, 윈도우에서 막혔던 것",
+  "search_hint": "검색 — code ., pwd, ENOENT, Peek…",
+  "playing": true,
+  "keys": {"bm": "dw-vscode-bm", "nav": "dw-vscode-nav", "pos": "dw-vscode-pos"},
+  "cloudField": "dw_vscode",
+  "links": []
+ },
+ {
+  "id": "javascript",
+  "name": "JavaScript",
+  "en": "JavaScript",
+  "title": "JavaScript 노트",
+  "mono": "JS",
+  "brand_sub": "문법 · 실행 · 개념",
+  "desc": "자바스크립트 문법과 개념 — 코딩Dojo에서 배운 것",
+  "search_hint": "검색 — .js, node, 변수…",
+  "playing": true,
+  "keys": {"bm": "dw-javascript-bm", "nav": "dw-javascript-nav", "pos": "dw-javascript-pos"},
+  "cloudField": "dw_javascript",
+  "links": []
+ },
+ {
+  "id": "rules",
+  "name": "나의 규칙",
+  "en": "My Rules",
+  "title": "나의 코딩 규칙",
+  "mono": "규",
+  "brand_sub": "폴더 · 이름 · 습관",
+  "desc": "폴더 구조, 파일 이름 짓기 같은 나만의 약속",
+  "search_hint": "검색 — 폴더, 이름, v2…",
+  "playing": false,
+  "keys": {"bm": "dw-rules-bm", "nav": "dw-rules-nav", "pos": "dw-rules-pos"},
+  "cloudField": "dw_rules",
+  "links": []
+ }
+]
