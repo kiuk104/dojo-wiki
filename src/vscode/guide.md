@@ -105,3 +105,30 @@ npm ERR! enoent Could not read package.json
 
 ### 왜 신경 써야 하나
 VS Code에서도 `Ctrl + Space` = **자동완성** 단축키라 코딩하면서 자주 누르게 된다.
+
+## GitHub 로그인 (git push 인증) {#github-login}
+
+> 🏷️ `git` `github` `push` · 📅 2026-10-21
+
+**한 줄 요약:** PC에서 `git push`를 한 번 하면 브라우저 로그인 창이 뜨고, 로그인하면 Windows가 기억해 둔다.
+
+### 문제 / 상황
+`git push` 할 때 이런 에러:
+```
+fatal: could not read Username for 'https://github.com'
+```
+→ 이 컴퓨터(또는 셸)에 **GitHub 로그인 정보가 없다**는 뜻.
+
+### 해결
+1. VS Code 터미널에서 올릴 폴더로 이동: `cd E:\Coding\dojo-wiki`
+2. `git push` 입력
+3. 뜨는 창에서 **Sign in with your browser** → 브라우저에서 GitHub 로그인 → 허용
+4. 끝. 다음부터는 묻지 않음 (`push_github.bat`, `push.bat` 도 그냥 됨)
+
+창이 안 뜨면 Git for Windows 를 다시 설치하면서 **Git Credential Manager** 를 켜기.
+
+### 왜 그런가
+로그인 정보는 **컴퓨터마다 따로** 저장돼요(Windows 자격 증명 관리자). 렌더팜 PC마다 라이선스를 따로 등록하는 것과 같아요. Claude가 쓰는 작업 공간은 내 PC와 다른 컴퓨터라 거기엔 로그인이 없어서, push 만 내 PC에서 해요.
+
+> ⚠️ 주의: 비밀번호나 토큰(ghp_…)을 채팅·코드·파일에 붙여넣지 않기.
+
