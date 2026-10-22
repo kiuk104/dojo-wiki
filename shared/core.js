@@ -1,6 +1,8 @@
 /* Dojo Wiki — 모든 페이지 공통: 테마·글자 크기 설정, 오프라인(서비스 워커), 새 버전 알림 */
 (function(){
   var R=document.documentElement, ROOT=window.FS_ROOT||'';
+  // 창 이름표: 코딩Dojo 의 위키 링크(target="dojo-wiki")가 새 탭 대신 이 창을 다시 쓰게 한다
+  try{ if(window.name!=='dojo-wiki') window.name='dojo-wiki'; }catch(e){}
   function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
   function put(k,v){try{ v==null?localStorage.removeItem(k):localStorage.setItem(k,v) }catch(e){}}
 
