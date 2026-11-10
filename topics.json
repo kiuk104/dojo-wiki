@@ -28,6 +28,20 @@
   "links": []
  },
  {
+  "id": "flutter",
+  "name": "Flutter · Dart",
+  "en": "Flutter & Dart",
+  "title": "Flutter · Dart 노트",
+  "mono": "F",
+  "brand_sub": "앱 · 패키지 · 안드로이드",
+  "desc": "플러터 앱 만들면서 막혔던 것 — 패키지, 빌드, 데이터",
+  "search_hint": "검색 — pub, version solving, utf8…",
+  "playing": true,
+  "keys": {"bm": "dw-flutter-bm", "nav": "dw-flutter-nav", "pos": "dw-flutter-pos"},
+  "cloudField": "dw_flutter",
+  "links": []
+ },
+ {
   "id": "rules",
   "name": "나의 규칙",
   "en": "My Rules",
