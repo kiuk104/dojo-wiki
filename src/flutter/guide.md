@@ -168,3 +168,41 @@ for (var i = 0; i < maxTicks && pos < until; i++) {
 ### 왜 그런가
 - 3D 비유: 리그(뼈대·컨트롤러 계산)와 렌더를 따로 두면, 렌더 안 걸고도 뷰포트에서 포즈가 맞는지 바로 볼 수 있는 것과 같아요.
 - 판단 코드에 화면·소리·인터넷이 없으면 입력 → 출력만 보면 되니까 테스트가 쉽고 빨라요. 실패하면 숫자로 바로 보여서, 이번엔 테스트 쪽 계산 실수 2개(위치 간격·틱 개수)를 금방 찾아 고쳤어요.
+
+## release 서명 키스토어 — 만들기·지키기 {#release-keystore}
+
+> 🏷️ `flutter` `android` `서명` `release` · 📅 2026-11-10
+
+**한 줄 요약:** release APK 는 내 키스토어(.jks)로 서명한다. 이 파일과 비밀번호를 잃으면 **같은 앱으로 업데이트를 영영 못 하니** git 에는 넣지 말고 따로 백업한다.
+
+### 문제 / 상황
+지금까지 폰에 깐 건 디버그 앱. 디버그 키는 PC 마다 다르고(`~/.android/debug.keystore`), 실사용용으로는 내 키가 필요해요.
+
+### 해결
+1. 키스토어 만들기 (Android Studio 에 들어 있는 `keytool`):
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair `
+  -keystore C:\Users\kiuk1\keystores\fokus-player\fokus-player-upload.jks `
+  -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+2. 비밀번호는 `android/key.properties` 에 (Flutter 기본 `.gitignore` 가 이미 제외):
+```
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=C:/Users/kiuk1/keystores/fokus-player/fokus-player-upload.jks
+```
+3. `android/app/build.gradle.kts` 의 release 가 이 파일을 읽어 서명하게 설정 → `flutter build apk --release`
+4. 확인: `apksigner verify --print-certs app-release.apk` 에 `CN=Android Debug` 가 아니라 내 이름이 나오면 성공.
+
+### 왜 그런가
+- 안드로이드는 **같은 서명** 의 APK 만 업데이트로 받아 줘요. 서명이 다르면 "앱이 충돌합니다" 로 설치 거부 → 지우고 다시 깔아야 하고, 그러면 앱 데이터(이어듣기 위치 등)도 사라져요.
+- 3D 비유: 키스토어는 **작가 낙관(도장)**. 같은 도장이 찍힌 작품만 "그 작가의 새 버전" 으로 인정돼요. 도장을 잃어버리면 새 작품은 남의 것으로 취급.
+- 그래서 디버그 앱 → release 앱으로 바꿀 땐 **한 번은 지우고** 설치해야 해요. 그 뒤로는 release 끼리 덮어 설치(`adb install -r`)하면 데이터가 남아요.
+
+> ⚠️ 주의 키스토어 폴더는 **프로젝트 밖**에 두고, `.jks` + `key.properties` 두 파일을 같이 백업 (USB, 암호 걸린 압축 파일 등). 비밀번호는 비밀번호 관리자에도 적어 두기. git·채팅·공개 클라우드 폴더에 올리지 않기.
+
+> 💡 꿀팁 `key.properties` 가 없을 때 release 빌드가 디버그 키로 몰래 서명되지 않게, 일부러 멈추도록 설정해 두면 실수를 막을 수 있어요.
+
+### 관련
+- 앱을 업데이트할 때 DB 표 바꾸기 (마이그레이션)
