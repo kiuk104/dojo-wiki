@@ -93,3 +93,66 @@ unawaited(player.play());              // 재생은 시작만 시키고 바로 �
 - 그냥 `player.play();` 라고만 써도 동작은 같지만, 린트가 "Future 를 버렸다"고 경고할 수 있어서 `unawaited(...)` 로 **일부러 안 기다린다**고 표시해 둬요.
 
 > ⚠️ 주의 기다려야 하는 것(파일 열기, DB 저장)까지 `unawaited` 로 하면 순서가 꼬여요. "끝나야 다음이 되는 일"인지 먼저 생각하기.
+
+## 앱을 업데이트할 때 DB 표 바꾸기 (마이그레이션) {#drift-migration}
+
+> 🏷️ `flutter` `drift` `DB` · 📅 2026-11-10
+
+**한 줄 요약:** 이미 폰에 깔린 앱의 DB 에 표를 추가하려면 `schemaVersion` 을 올리고 `onUpgrade` 에 "옛 버전 → 새 버전" 바꾸는 법을 적는다.
+
+### 문제 / 상황
+Fokus Player 에 설정값(반복 횟수, 독일어만 듣기)을 저장할 `prefs` 표가 필요해졌어요. 그런데 폰에는 이미 1단계 앱이 깔려서 **표 2개짜리 DB** 가 있고, 거기엔 이어듣기 위치도 들어 있어요. 코드에 표만 추가하면 새로 설치한 폰에선 되지만, 이미 깔린 폰에선 `prefs` 표가 없어서 오류가 나요.
+
+### 해결
+```dart
+@override
+int get schemaVersion => 2;   // 1 → 2 로 올림
+
+@override
+MigrationStrategy get migration => MigrationStrategy(
+  onUpgrade: (m, from, to) async {
+    if (from < 2) await m.createTable(prefs);   // 2: 설정 표 추가
+  },
+);
+```
+테스트로 "옛 DB" 를 직접 만들어 확인:
+```dart
+NativeDatabase.memory(setup: (raw) {
+  raw.execute('CREATE TABLE "episodes" (...)');   // 1버전 표 그대로
+  raw.execute('PRAGMA user_version = 1');          // "나는 1버전 DB" 표시
+})
+```
+
+### 왜 그런가
+- DB 파일 안에는 **버전 번호**(`user_version`)가 적혀 있어요. 앱이 켜질 때 "파일은 1버전, 코드는 2버전" 이면 `onUpgrade(from: 1, to: 2)` 를 불러 줘요.
+- 3D 비유: 블렌더 옛 버전 `.blend` 를 새 버전에서 열면 **자동 변환** 되잖아요. 그 변환 규칙을 내가 써 주는 것.
+- `if (from < 2)` 처럼 쓰면 나중에 3, 4버전이 생겨도 1버전 폰은 2→3→4 를 차례로 다 거쳐요.
+
+> ⚠️ 주의 표를 고친 뒤 `dart run build_runner build` 로 생성 코드(`database.g.dart`)도 다시 만들어야 해요.
+
+## 폰 없이 테스트하기 — 판단과 동작을 나누기 {#logic-separation}
+
+> 🏷️ `flutter` `테스트` `설계` · 📅 2026-11-10
+
+**한 줄 요약:** "어디로 이동할지 정하는 코드"와 "실제로 소리를 옮기는 코드"를 나누면, 판단 부분은 폰 없이 PC 에서 수백 번 시험할 수 있다.
+
+### 문제 / 상황
+묶음 반복(한 문장 3번)과 독일어만 듣기(한국어 건너뛰기)는 재생 중 0.1초마다 위치를 보고 판단해요. 이걸 오디오 플레이어 코드 안에 섞어 두면 확인할 방법이 **폰에 깔고 직접 듣기** 뿐이에요.
+
+### 해결
+- `StudyLogic` 클래스: 위치를 받으면 "여기로 이동해" 또는 "그대로" 만 대답. 소리는 모름.
+- `PlayerHandler`: 0.1초마다 위치를 `StudyLogic` 에 물어보고, 대답대로 `seek`.
+- 테스트에선 가짜 재생기(0.1초씩 위치를 늘리는 반복문)로 몇 분 분량을 순식간에 돌려 봄:
+```dart
+for (var i = 0; i < maxTicks && pos < until; i++) {
+  final target = logic.onTick(pos);
+  if (target != null) { pos = target; continue; }   // 이동하라면 이동
+  heard.add(pos);                                    // 아니면 "들은 위치" 기록
+  pos += const Duration(milliseconds: 100);
+}
+```
+→ "3회 반복이면 각 문장이 3번 시작됐나", "독일어만이면 한국어 구간에서 들린 시간이 0인가" 를 숫자로 확인.
+
+### 왜 그런가
+- 3D 비유: 리그(뼈대·컨트롤러 계산)와 렌더를 따로 두면, 렌더 안 걸고도 뷰포트에서 포즈가 맞는지 바로 볼 수 있는 것과 같아요.
+- 판단 코드에 화면·소리·인터넷이 없으면 입력 → 출력만 보면 되니까 테스트가 쉽고 빨라요. 이번에도 테스트에서 경계값 실수를 2개 바로 찾았어요.
