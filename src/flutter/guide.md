@@ -206,3 +206,34 @@ storeFile=C:/Users/kiuk1/keystores/fokus-player/fokus-player-upload.jks
 
 ### 관련
 - 앱을 업데이트할 때 DB 표 바꾸기 (마이그레이션)
+
+## 화면 꺼진 채 다음 곡으로 — stop() 대신 소스 바꾸기 {#background-next-track}
+
+> 🏷️ `flutter` `audio_service` `android` `백그라운드` · 📅 2026-11-10
+
+**한 줄 요약:** 백그라운드 재생 중에 다음 에피소드로 넘어갈 때 `player.stop()` 을 먼저 부르면 안 된다. 새 소스를 바로 `setAudioSource` 한다.
+
+### 문제 / 상황
+에피소드가 끝나면 다음 에피소드로 자동으로 넘어가게 만들면서, 처음엔 "지금 것 멈춤(`stop`) → 다음 것 열기 → 재생" 순서로 짜려고 했어요. 그런데 audio_service 소스를 읽어 보니:
+```java
+if (oldProcessingState != idle && processingState == idle) {
+    stop();   // 백그라운드 서비스를 통째로 내림
+}
+```
+`player.stop()` 을 부르면 상태가 **idle(멈춤)** 이 되고, 그 순간 백그라운드 서비스가 내려가요. 화면이 꺼진 채로 다시 재생하려면 서비스를 새로 띄워야 하는데, **안드로이드 12+ 는 백그라운드에서 서비스 시작을 막아요.** → 화면 끄고 들으면 다음 에피소드가 안 나올 수 있어요.
+
+### 해결
+```dart
+await _savePosition(player.position);
+// player.stop() 은 부르지 않음
+await player.setAudioSource(AudioSource.uri(next), initialPosition: start);
+player.play();
+```
+소스를 바로 바꾸면 상태가 `loading(불러오는 중) → ready` 만 거치고 idle 이 되지 않아서 서비스가 계속 살아 있어요.
+
+### 왜 그런가
+- 3D 비유: 렌더팜에서 다음 프레임을 걸 때 **렌더 서버를 껐다 켜는** 것과 **작업만 바꿔 넣는** 것의 차이. 껐다 켜려면 관리자 허락(=사용자가 화면을 켜고 앱을 누름)이 필요해요.
+- 이런 건 문서보다 **라이브러리 소스를 직접 읽어서** 알게 되는 경우가 많아요. 패키지 소스는 `C:\Users\kiuk1\AppData\Local\Pub\Cache\hosted\pub.dev\<패키지-버전>\` 에 있어요.
+
+### 관련
+- await 했더니 안 돌아올 때 (just_audio 의 play)
