@@ -179,3 +179,32 @@ PATH는 그냥 글자 한 줄이라 `+=` 는 **글자를 뒤에 그대로 이어
 ### 관련
 - 터미널 기본기
 
+
+## GitHub Pages 배포가 실패해서 옛 파일이 보일 때 {#pages-deploy-rerun}
+
+> 🏷️ `github` `pages` `actions` · 📅 2026-11-10
+
+**한 줄 요약:** 커밋은 됐는데 사이트가 그대로면 Actions 의 **pages build and deployment** 가 실패했는지 보고, 실패한 작업만 다시 돌린다.
+
+### 문제 / 상황
+Fokus Podcast 자막(VTT) 16개를 새로 올렸는데, 피드 속 자막 링크가 전부 **404**. 피드 파일은 저장소에 제대로 커밋돼 있었는데도요.
+
+원인: 커밋 직후 돌아간 **pages build and deployment** 가 `deploy` 단계에서 `Timeout reached, aborting!` 으로 실패 → 사이트는 **옛 피드**를 계속 보여 줌. 옛 피드는 이미 지워진 옛 자막 파일 이름을 가리키니 404.
+
+### 해결
+```powershell
+gh run list -R kiuk104/notebooklm-podcast-feed --limit 4     # 실패한 실행 찾기
+gh run rerun <실행번호> -R kiuk104/notebooklm-podcast-feed --failed
+```
+
+웹에서는 저장소 → **Actions** → 실패한(빨간 ✕) 실행 → **Re-run failed jobs**.
+
+### 왜 그런가
+- GitHub Pages 는 **저장소 파일 → (빌드) → 사이트** 두 단계예요. 커밋이 성공해도 두 번째 단계가 실패하면 사이트는 예전 그대로.
+- 3D 비유: 씬 파일은 저장했는데 **렌더가 중간에 멈춰서** 결과 이미지가 지난번 것 그대로인 상황. 씬을 다시 저장할 필요 없이 렌더만 다시 걸면 돼요.
+- `Timeout` 은 내 잘못이 아니라 GitHub 쪽이 잠깐 느렸던 것이라, 다시 돌리면 대부분 성공해요.
+
+> 💡 꿀팁 확인은 저장소의 원본 파일(`raw.githubusercontent.com/...`)과 사이트 주소의 파일을 비교하면 빨라요. 원본은 새것인데 사이트가 옛것이면 배포 실패.
+
+### 관련
+- GitHub 로그인 (git push 인증)

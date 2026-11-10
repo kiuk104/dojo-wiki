@@ -68,3 +68,28 @@ final text = utf8.decode(res.bodyBytes);   // res.body 대신
 
 ### 관련
 - PowerShell 에서 한글이 든 명령 인자를 넘길 때도 비슷하게 깨질 수 있어요 (`flutter create --description "한글"` 이 깨졌던 일). 그땐 파일을 직접 고치는 게 빠름.
+
+## await 했더니 안 돌아올 때 (just_audio 의 play) {#await-play}
+
+> 🏷️ `dart` `async` `just_audio` · 📅 2026-11-10
+
+**한 줄 요약:** `await player.play()` 는 **재생이 멈출 때까지** 기다린다. 재생만 시작하고 다음 줄로 가려면 `unawaited(player.play())`.
+
+### 문제 / 상황
+에피소드를 여는 함수 끝에서 `await player.play();` 를 하면, 그 함수를 부른 쪽(목록 화면)이 재생이 끝날 때까지 멈춰 있어요. 34분짜리 에피소드면 34분 동안이요.
+
+### 해결
+```dart
+import 'dart:async';
+
+await player.setAudioSource(source);   // 여는 건 기다림 (실패하면 여기서 오류)
+unawaited(player.play());              // 재생은 시작만 시키고 바로 다음으로
+```
+
+### 왜 그런가
+- `Future` 는 "나중에 끝나는 일"의 **영수증**이고, `await` 는 "그 일이 끝날 때까지 여기서 기다려"예요.
+- 대부분의 함수는 일이 금방 끝나지만, `play()` 의 일은 "재생하기"라서 **재생이 멈춰야 끝나요**.
+- 3D 비유: 렌더 버튼을 누르고 렌더가 다 끝날 때까지 화면 앞에 앉아 있는 게 `await`, 렌더를 걸어 두고 다른 작업하러 가는 게 `unawaited`.
+- 그냥 `player.play();` 라고만 써도 동작은 같지만, 린트가 "Future 를 버렸다"고 경고할 수 있어서 `unawaited(...)` 로 **일부러 안 기다린다**고 표시해 둬요.
+
+> ⚠️ 주의 기다려야 하는 것(파일 열기, DB 저장)까지 `unawaited` 로 하면 순서가 꼬여요. "끝나야 다음이 되는 일"인지 먼저 생각하기.
