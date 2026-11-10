@@ -130,6 +130,18 @@ NativeDatabase.memory(setup: (raw) {
 
 > ⚠️ 주의 표를 고친 뒤 `dart run build_runner build` 로 생성 코드(`database.g.dart`)도 다시 만들어야 해요.
 
+### 칸 하나 추가하기 (v2 → v3)
+'다 들음' 표시를 위해 `episodes` 표에 `finished` 칸을 넣었을 때:
+```dart
+BoolColumn get finished => boolean().withDefault(const Constant(false))();
+...
+if (from < 3) await m.addColumn(episodes, episodes.finished);   // 3: 다 들음
+```
+- `withDefault(false)` 가 중요해요. 이미 있는 에피소드 줄에도 칸이 생기는데, 그 값을 "안 들음" 으로 채워 줘요.
+- **폰마다 DB 버전이 다를 수 있어요.** 1단계 앱만 깐 폰은 v1, 5단계 앱을 깐 폰은 v2. 그래서 테스트도 v1 → v3, v2 → v3 두 가지를 다 만들어요.
+
+> 💡 꿀팁 테스트에 옛 표를 만드는 SQL 을 붙여 넣을 때, 따옴표(`''`)가 들어 있으면 다른 언어(파이썬 등)를 거쳐 옮기다 깨지기 쉬워요. 실제로 `DEFAULT ''` 가 `DEFAULT` 로 사라져서 테스트가 실패했어요. 이미 맞게 써 둔 줄을 그대로 복사하는 게 안전.
+
 ## 폰 없이 테스트하기 — 판단과 동작을 나누기 {#logic-separation}
 
 > 🏷️ `flutter` `테스트` `설계` · 📅 2026-11-10
