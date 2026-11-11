@@ -270,3 +270,53 @@ Future<void> onTaskRemoved() => pause();
 - 3D 비유: 렌더팜 대기열에서 **작업 슬롯을 반납**하면 다음 차례 작업이 들어오는 것. 잠깐 쉬는 거면 슬롯은 쥐고 있어야 해요(pause).
 
 > ⚠️ 주의 알림의 '정지' 버튼은 여전히 세션을 없애요. 그 뒤에는 다른 앱이 버튼을 가져갈 수 있어요.
+
+## 앱 색을 토큰으로 — ThemeExtension {#theme-extension}
+
+> 🏷️ `flutter` `테마` `디자인` · 📅 2026-11-11
+
+**한 줄 요약:** 테마 색(배경·카드·강조…)을 `ThemeExtension` 한 벌로 두고, 화면 코드는 `context.fokus.c.gold` 처럼 **토큰 이름만** 쓴다. 테마를 바꾸면 화면 전체가 따라 바뀐다.
+
+### 문제 / 상황
+Fokus Player 에 Fokus Karten 과 같은 테마 7종(Classic Light·Dark, Paper, Neon, Forest, Lavender, Terminal)을 넣어야 했어요. 화면 곳곳에 `Colors.teal`, `colorScheme.primary` 같은 게 흩어져 있으면 테마마다 어디를 바꿔야 할지 알 수 없어요.
+
+### 해결
+```dart
+class Fokus extends ThemeExtension<Fokus> {
+  final FokusColors c;   // cream, card, border, ink, muted, gold, red, blue, green
+  final bool square;     // Terminal 이면 모서리 0
+  ...
+}
+extension FokusContext on BuildContext {
+  Fokus get fokus => Theme.of(this).extension<Fokus>()!;
+}
+
+// 화면에서는
+Text(german, style: TextStyle(color: context.fokus.c.blue));
+```
+- `ThemeData(extensions: [Fokus(...)])` 로 테마마다 한 벌씩 넣어요.
+- 버튼·스위치 같은 기본 위젯도 맞추려면 `ColorScheme` 도 토큰으로 채워요 (primary = gold, surface = cream …).
+- 테스트에서 Karten 의 `theme.css` 를 직접 읽어 값이 같은지 비교 → 한쪽만 바뀌면 테스트가 알려 줘요.
+
+### 왜 그런가
+- 3D 비유: 머티리얼마다 색을 직접 박아 두는 대신 **머티리얼 라이브러리의 공용 파라미터**(예: "Accent")를 연결해 두는 것. 파라미터 하나만 바꾸면 씬 전체가 바뀌어요.
+- 이름이 Karten CSS 변수(`--gold` 등)와 같아서 두 앱을 오가며 고칠 때 헷갈리지 않아요.
+
+> 💡 꿀팁 한글 글꼴은 한 벌에 6~8MB 라 앱에 넣을 때는 꼭 필요한 굵기(400·700)만. Google Fonts CSS 주소를 `curl` 로 그냥 받으면 굵기별 `.ttf` 주소가 나와요.
+
+## 위젯 테스트가 끝나지 않을 때 (가짜 시계 + DB) {#widget-test-fake-async}
+
+> 🏷️ `flutter` `테스트` · 📅 2026-11-11
+
+**한 줄 요약:** `testWidgets` 안은 **가짜 시계**로 돈다. 탭으로 시작된 DB 저장이 거기서 멈춰 있으면, 마지막에 `runAsync` 로 DB 를 다시 읽는 순간 영원히 기다린다.
+
+### 문제 / 상황
+설정 화면 테스트에서 테마 카드를 탭 → 저장 → 마지막에 `tester.runAsync(() => DisplaySettings.load(db))` 로 다시 읽기. 테스트가 끝나지 않았어요. `print('STEP n')` 을 곳곳에 넣어 보니 마지막 다시 읽기에서 멈춤.
+
+### 해결
+- 저장이 잘 되는지는 **화면 없는 단위 테스트**(`test(...)`)에서 확인하고, 위젯 테스트는 화면에서 값이 바뀌는지만 봐요.
+- 끝나지 않은 테스트 프로세스(`flutter_tester`)가 남아 파일을 잡고 있으면 다음 테스트가 `PathExistsException` 으로 죽어요 → 작업 관리자에서 그 프로세스를 끄기.
+
+### 왜 그런가
+- 위젯 테스트는 애니메이션을 빨리 돌리려고 시간을 흉내 내요. 진짜 시간이 필요한 일(파일·DB)은 그 안에서 반쯤 진행된 채 멈출 수 있어요.
+- 3D 비유: 뷰포트 미리보기(가짜 시계)에서 시뮬레이션 캐시를 굽기 시작하고, 최종 렌더(진짜 시계)에서 그 캐시가 끝나길 기다리는 꼴.
