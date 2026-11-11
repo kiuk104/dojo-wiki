@@ -378,3 +378,8 @@ await const MethodChannel('fokus/screen').invokeMethod('keepOn', true);
 ### 왜 그런가
 - 채널 = Dart 와 안드로이드 사이의 **무전기 채널**. 같은 이름(`fokus/screen`)으로 맞춰야 서로 들려요.
 - 테스트(PC)에는 안드로이드 쪽이 없어서 `MissingPluginException` 이 나요 → `try/catch` 로 조용히 넘기면 테스트도 안전.
+
+### 나중에 패키지로 바꾼 이유 (2026-11-11)
+화면 켜 두기가 "설정 세 가지 + 재생 중일 때만 + 일시정지 1분 뒤 해제 + 앱이 뒤로 가면 해제" 로 커지면서 `wakelock_plus` 패키지로 바꿨어요. 안쪽은 같은 `FLAG_KEEP_SCREEN_ON` 이에요.
+- 직접 만든 채널과 패키지를 **같이 두지 않기** — 둘이 서로 켜고 끄면 누가 껐는지 알 수 없어요. 채널 코드는 지웠어요.
+- "언제 켤지" 는 `shouldKeepAwake(...)` 라는 판단 함수로 떼어 내고, 1분 타이머는 `testWidgets` 의 가짜 시계로 `tester.pump(Duration(seconds: 61))` 해서 확인 (진짜로 1분 기다리지 않음).
