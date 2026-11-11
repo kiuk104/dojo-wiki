@@ -320,3 +320,61 @@ Text(german, style: TextStyle(color: context.fokus.c.blue));
 ### 왜 그런가
 - 위젯 테스트는 애니메이션을 빨리 돌리려고 시간을 흉내 내요. 진짜 시간이 필요한 일(파일·DB)은 그 안에서 반쯤 진행된 채 멈출 수 있어요.
 - 3D 비유: 뷰포트 미리보기(가짜 시계)에서 시뮬레이션 캐시를 굽기 시작하고, 최종 렌더(진짜 시계)에서 그 캐시가 끝나길 기다리는 꼴.
+
+## 글자를 상자에 꼭 맞게 — TextPainter 로 재기 {#text-fit}
+
+> 🏷️ `flutter` `글자` `레이아웃` · 📅 2026-11-11
+
+**한 줄 요약:** `TextPainter` 로 "이 크기면 몇 줄, 몇 px 높이인지" 미리 재고, 들어가는 가장 큰 크기를 이분 탐색으로 고른다. 잴 때와 그릴 때 **글자 모양(자간 등)이 같아야** 한다.
+
+### 문제 / 상황
+가로 화면 '크게 보기'에서 독일어 문장을 최대한 크게, 길면 자동으로 줄여 한 화면에 넣고 싶었어요. `FittedBox` 는 글자를 줄바꿈 없이 한 줄로 늘어놓은 뒤 통째로 줄여서, 긴 문장이 개미만 해져요.
+
+### 해결
+```dart
+double heightOf(String text, TextStyle style, double width) {
+  final p = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: width);   // 이 너비로 줄바꿈했을 때
+  return p.height;              // 높이가 얼마인지
+}
+// 18 ~ 72 사이에서 '들어가는 가장 큰 크기' 를 반씩 좁혀 찾기 (이분 탐색)
+```
+- 처음엔 테스트에서 **38px 넘침**. 원인: 잴 때는 내가 만든 스타일만, 그릴 때는 화면 기본 스타일(자간 0.25 등)이 섞여 들어감 → 글자가 조금 넓어져 줄이 하나 더 생김.
+- 고침: `DefaultTextStyle.of(context).style.merge(내 스타일)` 로 **같은 스타일**로 재기 + 이 화면에선 시스템 글자 배율 끄기(`MediaQuery.withNoTextScaling`).
+
+### 왜 그런가
+- 3D 비유: 렌더 해상도를 정하려고 **미리보기 렌더**를 걸 때, 본 렌더와 같은 설정(샘플 수·색 공간)으로 걸어야 결과가 맞는 것과 같아요.
+- 테스트 글꼴(FlutterTest)은 모든 글자가 정사각형이라, "30글자 × 20px = 600px" 처럼 계산이 딱 떨어져서 규칙을 확인하기 좋아요.
+
+## 안드로이드 기능을 직접 부르기 — MethodChannel {#method-channel}
+
+> 🏷️ `flutter` `android` `kotlin` · 📅 2026-11-11
+
+**한 줄 요약:** 패키지가 없거나 한 줄짜리 기능이면, `MainActivity.kt` 에 채널을 열고 Dart 에서 `invokeMethod` 로 부른다.
+
+### 문제 / 상황
+크게 보기 화면에서는 화면이 저절로 꺼지면 안 돼요. 안드로이드에선 창에 `FLAG_KEEP_SCREEN_ON` 한 줄만 켜면 되는데, 이것 때문에 패키지를 더 넣기는 아까웠어요.
+
+### 해결
+```kotlin
+// MainActivity.kt
+MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fokus/screen")
+    .setMethodCallHandler { call, result ->
+        if (call.method == "keepOn") {
+            if (call.arguments == true) window.addFlags(FLAG_KEEP_SCREEN_ON)
+            else window.clearFlags(FLAG_KEEP_SCREEN_ON)
+            result.success(null)
+        } else result.notImplemented()
+    }
+```
+```dart
+// Dart
+await const MethodChannel('fokus/screen').invokeMethod('keepOn', true);
+```
+상태 표시줄 숨기기(몰입 모드)는 Flutter 에 이미 있어요: `SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky)`.
+
+### 왜 그런가
+- 채널 = Dart 와 안드로이드 사이의 **무전기 채널**. 같은 이름(`fokus/screen`)으로 맞춰야 서로 들려요.
+- 테스트(PC)에는 안드로이드 쪽이 없어서 `MissingPluginException` 이 나요 → `try/catch` 로 조용히 넘기면 테스트도 안전.
