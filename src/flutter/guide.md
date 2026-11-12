@@ -453,3 +453,44 @@ Future<void> _open(Episode ep, Ticket t) async {
 - await 했더니 안 돌아올 때 (just_audio 의 play)
 - 화면 꺼진 채 다음 곡으로 — stop() 대신 소스 바꾸기
 - 폰 없이 테스트하기 — 판단과 동작을 나누기
+
+## 릴리스 빌드에서도 기록 남기기 — 최근 200줄 기록장 {#in-app-log}
+
+> 🏷️ `flutter` `디버깅` `로그` `release` · 📅 2026-11-12
+
+**한 줄 요약:** `debugPrint` 는 개발용(debug) 빌드에서만 보인다. 폰에 깔아 쓰는 release 빌드에서 "가끔만 생기는" 문제를 잡으려면, 앱 안에 **최근 N줄만 들고 있는 기록장**을 두고 파일에 저장해서 나중에 꺼내 본다.
+
+### 문제 / 상황
+차 연결을 끊은 직후 가끔 재생이 멈췄는데, 앱을 다시 켜니 풀렸고 다시 해 보면 재현이 안 됐어요. 재생기 기록은 `if (kDebugMode) debugPrint(...)` 로만 남기고 있어서 release 빌드에서는 **아무것도 안 남았어요.** 증거가 없으니 원인을 추측만 하게 돼요.
+
+### 해결
+```dart
+class PlayLog {
+  static final instance = PlayLog();
+  final maxLines = 200;
+  final _lines = <String>[];
+
+  void add(String message) {
+    _lines.add('${stamp(DateTime.now())} $message'); // 11-12 22:35:07.123 …
+    if (_lines.length > maxLines) {
+      _lines.removeRange(0, _lines.length - maxLines); // 오래된 것부터 버림
+    }
+    _scheduleSave(); // 0.3초 모았다가 파일에 한 번에
+  }
+}
+```
+- **최근 200줄만:** 넘치면 가장 오래된 줄부터 버려요. 계속 써도 크기가 일정해요.
+- **파일에 저장:** 앱 전용 폴더(`getApplicationSupportDirectory()`)에 저장하고, 앱을 켤 때 지난 기록을 앞에 붙여요. 문제가 나서 **앱을 껐다 켜도 직전 기록이 남아요.**
+- **무엇을 적나:** 에피소드 열기 요청 / 열림 / 취소됨 / 실패, 재생·일시정지·정지, 차의 `playFromMediaId`, 블루투스 끊김, 그리고 잡히지 않은 오류(`FlutterError.onError`, `PlatformDispatcher.instance.onError`).
+- **꺼내기:** 설정 화면 **기록 복사** 버튼 → `Clipboard.setData(...)` 로 버전·빌드 시각과 함께 복사. 메신저에 붙여 넣어 보내면 돼요.
+
+### 왜 그런가
+- 3D 비유: 실행 취소(Undo) 기록과 같아요. 최근 몇 단계만 들고 있고, 넘치면 가장 오래된 단계부터 지워요. 이런 모양을 **링 버퍼**(고리 모양 목록)라고 해요.
+- "가끔만 생기는" 문제는 대부분 **순서(타이밍)** 문제라서, 각 줄에 **밀리초까지** 시각을 찍어 두면 "정지가 열기보다 0.2초 먼저 왔다" 같은 걸 읽을 수 있어요.
+- 파일 쓰기를 줄마다 하지 않고 잠깐 모았다가 쓰는 건, 디스크를 덜 쓰고 앱을 느리게 하지 않으려고요.
+
+> 💡 꿀팁 기록 문구는 나중에 내가 읽을 거라 **한국어로 짧게**. 개인 정보(이메일 등)는 적지 않기.
+
+### 관련
+- 같은 일을 여러 곳에서 겹쳐 부를 때 — 마지막 요청만 끝까지
+- 안드로이드 기능을 직접 부르기 — MethodChannel

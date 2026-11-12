@@ -214,3 +214,40 @@ node --test tests\listen_logic.test.js
 
 ### 관련
 - CSS 변수 이름이 겹치면 색이 사라져요
+
+## 포트가 같으면 로그인·저장값을 같이 써요 (origin) {#same-port-same-origin}
+
+> 🏷️ `javascript` `localStorage` `vite` `origin` · 📅 2026-11-12
+
+**한 줄 요약:** 브라우저는 `localStorage`(로그인 세션·설정)를 **주소+포트(origin)** 마다 따로 보관한다. 개발 중인 두 앱이 같은 포트를 쓰면 한 서랍을 나눠 쓰게 돼서 로그인과 설정이 섞인다.
+
+### 문제 / 상황
+새 앱 Fokus Aufsatz 를 만들면서 기획서에 dev 포트를 `5176` 으로 적어 두었다. 그런데 다른 앱들 설정을 확인해 보니 **Fokus Lesen 이 이미 5176** 을 쓰고 있었다.
+```
+DE 5173 · Karten 5174 · Alltag/Hanja 5175 · Lesen 5176
+```
+두 앱 다 같은 Supabase 프로젝트를 쓴다. 그래서 Aufsatz 에서 **아들 계정**으로 로그인하면, 다음에 Lesen 을 켰을 때 **아빠 계정이 아니라 아들 계정**으로 열린다. 로그인 정보가 `localhost:5176` 서랍 하나에 들어 있기 때문이다.
+
+### 해결
+쓰지 않는 포트로 옮겼다. `strictPort` 는 그대로 둔다. 포트가 막혀 있으면 다른 번호로 몰래 옮겨 가지 말고 에러를 내라는 뜻이다.
+```js
+// vite.config.js
+server: { port: 5177, strictPort: true },
+```
+설정 키 이름에도 앱마다 다른 앞글자를 붙인다 (`fa-settings` · `fl-settings` · `fz-settings`). 이건 혹시 서랍을 같이 쓰게 되더라도 서로 덮어쓰지 않게 하는 두 번째 안전장치다.
+
+빈 포트인지 확인하는 방법:
+```bash
+grep -n "port:" */vite.config.*      # 다른 앱들이 정해 둔 포트
+netstat -ano | findstr :5177         # 지금 그 포트를 쓰는 프로그램 (없으면 빈 줄)
+```
+
+### 왜 그런가
+origin = `주소 + 포트` (예: `http://localhost:5176`). 브라우저는 origin 마다 **서랍장 하나**를 준다. `localStorage` · 쿠키 · 서비스 워커가 모두 그 서랍에 들어간다.
+3D 로 치면 **프로젝트 폴더**와 같다. 두 씬이 같은 `textures/` 폴더를 쓰면, 한쪽에서 `wood.png` 를 바꿨을 때 다른 씬의 나무도 바뀐다. 포트를 나누는 것은 씬마다 폴더를 따로 두는 것이다.
+배포하면 주소가 `fokus-aufsatz.vercel.app` 처럼 앱마다 달라서 저절로 나뉜다. 섞이는 것은 **개발 중 localhost** 에서만이다.
+
+> ⚠️ 주의: 같은 포트로 두면 `strictPort` 때문에 두 앱을 **동시에 켤 수도 없다**. 나중에 켠 쪽이 "port is already in use" 로 멈춘다.
+
+### 관련
+- 링크를 이미 열린 창에서 열기 (target 이름)
