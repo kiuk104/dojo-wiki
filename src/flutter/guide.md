@@ -140,7 +140,33 @@ if (from < 3) await m.addColumn(episodes, episodes.finished);   // 3: 다 들음
 - `withDefault(false)` 가 중요해요. 이미 있는 에피소드 줄에도 칸이 생기는데, 그 값을 "안 들음" 으로 채워 줘요.
 - **폰마다 DB 버전이 다를 수 있어요.** 1단계 앱만 깐 폰은 v1, 5단계 앱을 깐 폰은 v2. 그래서 테스트도 v1 → v3, v2 → v3 두 가지를 다 만들어요.
 
-> 💡 꿀팁 테스트에 옛 표를 만드는 SQL 을 붙여 넣을 때, 따옴표(`''`)가 들어 있으면 다른 언어(파이썬 등)를 거쳐 옮기다 깨지기 쉬워요. 실제로 `DEFAULT ''` 가 `DEFAULT` 로 사라져서 테스트가 실패했어요. 이미 맞게 써 둔 줄을 그대로 복사하는 게 안전.
+### 표 두 개 + 처음 데이터 넣기 (v3 → v4) — 2026-11-13
+플레이리스트를 만들면서 `playlists`, `playlist_items` 표 두 개와 `episodes.last_played_at` 칸을 한 번에 넣었어요. 그리고 **기본 스마트 목록 세 개**를 처음부터 들어 있게 했어요.
+```dart
+int get schemaVersion => 4;
+
+MigrationStrategy get migration => MigrationStrategy(
+  onCreate: (m) async {          // 앱을 처음 설치한 폰
+    await m.createAll();
+    await _addDefaultSmartLists();
+  },
+  onUpgrade: (m, from, to) async {   // 이미 깔린 폰
+    ...
+    if (from < 4) {
+      await m.addColumn(episodes, episodes.lastPlayedAt);
+      await m.createTable(playlists);
+      await m.createTable(playlistItems);
+      await _addDefaultSmartLists();   // 여기서도!
+    }
+  },
+);
+```
+- **기본 데이터는 두 군데에 다 넣어야 해요.** 새로 설치한 폰은 `onCreate` 만, 업데이트한 폰은 `onUpgrade` 만 지나가요. 한쪽만 쓰면 "내 폰엔 기본 목록이 없어요" 가 돼요.
+- `onCreate` 를 직접 쓰면 drift 가 해 주던 `createAll()` 도 내가 불러야 해요 (안 부르면 표가 하나도 안 생김).
+- 3D 비유: 새 프로젝트 템플릿(onCreate)에도, 옛 파일 변환기(onUpgrade)에도 같은 기본 재질을 넣어 두는 것.
+- 테스트는 v1·v2·v3 → v4 를 모두. 특히 **지금 폰에 있는 v3** 에서 위치·다 들음·설정이 그대로인지.
+
+> 💡 꿀팁 테스트에 옛 표를 만드는 SQL 을 붙여 넣을 때, 따옴표(`''`)가 들어 있으면 다른 언어(파이썬 등)를 거쳐 옮기다 깨지기 쉬워요. 실제로 `DEFAULT ''` 가 `DEFAULT` 로 사라져서 테스트가 실패했어요(2026-11-13 에 또 한 번!). 이유: Dart 에서 `'...DEFAULT '', ...'` 는 작은따옴표 안의 `''` 가 "문자열 끝 + 새 문자열 시작" 으로 읽혀서, **나란히 붙은 두 문자열이 하나로 이어져요** (`'ab' 'cd'` = `'abcd'`). 그래서 `''` 가 감쪽같이 사라져요. 작은따옴표 문자열 안에서는 역슬래시를 붙여 `\'\'` 로 써야 해요. 이미 맞게 써 둔 줄을 그대로 복사하는 게 안전.
 
 ## 폰 없이 테스트하기 — 판단과 동작을 나누기 {#logic-separation}
 
@@ -494,3 +520,69 @@ class PlayLog {
 ### 관련
 - 같은 일을 여러 곳에서 겹쳐 부를 때 — 마지막 요청만 끝까지
 - 안드로이드 기능을 직접 부르기 — MethodChannel
+
+## 부모 클래스에 이미 있는 이름 — 이름이 겹칠 때 {#inherited-name-clash}
+
+> 🏷️ `dart` `클래스` `extends` `audio_service` · 📅 2026-11-13
+
+**한 줄 요약:** `extends` 로 물려받은 클래스에는 내가 안 만든 이름도 들어 있어서, 같은 이름을 새로 만들면 부딪힌다 → 겹치지 않는 이름으로.
+
+### 문제 / 상황
+Fokus Player 재생 엔진(`PlayerHandler extends BaseAudioHandler`)에 "지금 듣는 플레이리스트" 를 담을 칸을 `queue` 라는 이름으로 만들었더니, 오류가 한꺼번에 30개 났어요.
+```
+The getter 'smart' isn't defined for the type 'List<MediaItem>'
+A value of type 'PlayQueue?' can't be assigned to a variable of type 'List<MediaItem>'
+```
+내가 만든 `queue` 는 `PlayQueue` 인데, Dart 는 자꾸 `List<MediaItem>` 이라고 해요.
+
+### 해결
+```dart
+// ✗ 부모(BaseAudioHandler)에 이미 queue 가 있음
+final queue = ValueNotifier<PlayQueue?>(null);
+
+// ✓ 겹치지 않는 이름
+final playQueue = ValueNotifier<PlayQueue?>(null);
+```
+
+### 왜 그런가
+- `extends` = 부모 클래스의 칸과 기능을 **전부 물려받기**. audio_service 의 `BaseAudioHandler` 에는 원래 "재생 대기열" 용 `queue`(타입 `List<MediaItem>` 스트림)가 들어 있어요. 문서를 안 보면 있는지 모르죠.
+- 같은 이름을 다시 만들면 부모 것을 **덮어쓰려는**(override) 것처럼 보이는데 타입이 달라서 엉켜요. 오류 문구에 **내가 쓴 적 없는 타입**(`List<MediaItem>`)이 나오면 이걸 의심하면 돼요.
+- 3D 비유: 리깅된 캐릭터를 가져왔는데 이미 `Root` 라는 본이 있는 상태에서 내가 또 `Root` 를 만든 것. 이름이 같으면 프로그램은 어느 쪽인지 헷갈려요.
+
+> 💡 꿀팁 VS Code 에서 클래스 이름(`BaseAudioHandler`)을 Ctrl+클릭하면 부모 클래스 코드로 가서 어떤 이름이 이미 있는지 볼 수 있어요.
+
+### 관련
+- 화면 꺼진 채 다음 곡으로 — stop() 대신 소스 바꾸기
+
+## 목록을 저장할까, 조건을 저장할까 — 스마트 재생목록 {#smart-playlist-rule}
+
+> 🏷️ `flutter` `설계` `JSON` `drift` · 📅 2026-11-13
+
+**한 줄 요약:** 에피소드를 담아 두는 대신 **고르는 조건**을 저장하고, 열 때마다 다시 계산하면 새 에피소드가 저절로 들어오는 "스마트 목록" 이 된다.
+
+### 문제 / 상황
+Fokus Player 에 "안 들은 단어편", "듣던 것 이어서" 같은 목록이 필요했어요. 에피소드를 직접 담아 두면, 새 에피소드가 올라오거나 다 듣고 나면 내가 일일이 넣고 빼야 해요.
+
+### 해결
+플레이리스트 표에 `smart_rule` 칸을 두고, 조건을 **JSON 글자**로 저장해요. 칸이 비어 있으면 일반 플레이리스트(직접 담기), 있으면 스마트 목록.
+```json
+{"kind":"vocab","status":"unplayed","days":null,"limit":null,"sort":"newest"}
+```
+열 때마다 전체 에피소드에 조건을 걸러서(`where`) 정렬(`sort`)하고 자르기(`take`):
+```dart
+List<Episode> apply(List<Episode> all) {
+  final out = all.where((e) => kindMatches(kind, e) && statusMatches(status, e)).toList();
+  out.sort(_comparator(sort));
+  return limit == null ? out : out.take(limit!).toList();
+}
+```
+읽을 때는 깨진 JSON·모르는 값이 와도 멈추지 않게 **기본값으로** 돌려요 (`try` / `on FormatException`).
+
+### 왜 그런가
+- 3D 비유: 일반 플레이리스트 = **모디파이어를 적용(Apply)해 굳힌 메시**, 스마트 목록 = **모디파이어 스택을 그대로 둔 것**. 원본(에피소드)이 바뀌면 결과가 저절로 다시 계산돼요.
+- 대신 "재생을 시작한 다음" 에는 순서를 **굳혀요**(시작할 때 결과의 id 목록을 저장). 다 들은 에피소드가 '안 들음' 조건에서 빠지면서 다음 순서가 흔들리면 안 되니까요. 계산할 땐 살아 있게, 재생할 땐 굳혀서.
+- 조건을 고르는 화면에서 바꿀 때마다 `setState` → `apply` 를 다시 불러서 **미리보기가 바로** 바뀌어요. 계산이 가벼워서 가능한 방법.
+
+### 관련
+- 앱을 업데이트할 때 DB 표 바꾸기 (마이그레이션)
+- 폰 없이 테스트하기 — 판단과 동작을 나누기
