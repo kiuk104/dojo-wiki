@@ -42,6 +42,20 @@
   "links": []
  },
  {
+  "id": "python",
+  "name": "Python",
+  "en": "Python",
+  "title": "Python 노트",
+  "mono": "Py",
+  "brand_sub": "스크립트 · 서버 · 자동화",
+  "desc": "파이썬 스크립트와 서버(Fokus Podcast 등)를 만들면서 막혔던 것",
+  "search_hint": "검색 — 잠금, json, 스크립트…",
+  "playing": true,
+  "keys": {"bm": "dw-python-bm", "nav": "dw-python-nav", "pos": "dw-python-pos"},
+  "cloudField": "dw_python",
+  "links": []
+ },
+ {
   "id": "rules",
   "name": "나의 규칙",
   "en": "My Rules",

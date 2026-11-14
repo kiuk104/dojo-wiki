@@ -63,6 +63,9 @@
 [data-game="flutter"]{--acc:#1b6fa8; --acc-soft:#d8e9f5; --acc2:#94620c; --acc2-soft:#f1e6cc;}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="paper"]):not([data-theme="sepia"]):not([data-theme="dim"]) [data-game="flutter"],:root:not([data-theme="light"]):not([data-theme="paper"]):not([data-theme="sepia"]):not([data-theme="dim"])[data-game="flutter"]{--acc:#5fb4ec; --acc-soft:#10273a; --acc2:#dcaa4c; --acc2-soft:#3a2f1c;}}
 :root:is([data-theme="dark"],[data-theme="dim"]) [data-game="flutter"],:root:is([data-theme="dark"],[data-theme="dim"])[data-game="flutter"]{--acc:#5fb4ec; --acc-soft:#10273a; --acc2:#dcaa4c; --acc2-soft:#3a2f1c;}
+[data-game="python"]{--acc:#6a4c9c; --acc-soft:#e7e0f2; --acc2:#94620c; --acc2-soft:#f1e6cc;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="paper"]):not([data-theme="sepia"]):not([data-theme="dim"]) [data-game="python"],:root:not([data-theme="light"]):not([data-theme="paper"]):not([data-theme="sepia"]):not([data-theme="dim"])[data-game="python"]{--acc:#b59be6; --acc-soft:#221a33; --acc2:#dcaa4c; --acc2-soft:#3a2f1c;}}
+:root:is([data-theme="dark"],[data-theme="dim"]) [data-game="python"],:root:is([data-theme="dark"],[data-theme="dim"])[data-game="python"]{--acc:#b59be6; --acc-soft:#221a33; --acc2:#dcaa4c; --acc2-soft:#3a2f1c;}
 
 
 *{box-sizing:border-box}
