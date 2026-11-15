@@ -735,3 +735,53 @@ await Future.delayed(retryDelay);             // 503·시간 초과는 잠깐 �
 ### 관련
 - 옮겨 간 데이터 — 지우고 새로 만들지 말고 옮기기
 - 오류는 메시지 글자 말고 상태 코드로 판단하기 (Python)
+
+## 오디오 포커스 — 다른 앱과 소리가 겹칠 때 {#audio-focus}
+
+> 🏷️ `flutter` `just_audio` `audio_session` `블루투스` · 📅 2026-11-15
+
+**한 줄 요약:** 안드로이드는 "지금 소리를 낼 앱" 을 **오디오 포커스**라는 마이크(발언권)로 정해요. 포커스를 잃으면 **멈추고**, 블루투스 같은 출력 기기가 바뀌면 다음 재생 때 **포커스를 다시 받고 소리를 새로 열어야** 해요.
+
+### 문제 / 상황
+차 시동을 껐다 켜서 블루투스가 다시 붙으면:
+1. Fokus Player 는 재생 중(진행 막대가 움직임)인데 차 스피커에서 소리가 안 남
+2. 그 상태에서 안테나팟이 소리를 틀면, 그때부터 Fokus Player 소리가 **같이** 나와 겹침
+
+just_audio 가 포커스를 알아서 처리하게(`handleInterruptions: true`, 기본값) 두었는데, 잠깐 잃은 포커스를 돌려받으면 **저절로 다시 재생**하고, 출력 기기 변경은 보지 않았어요.
+
+### 해결
+자동 처리를 끄고, 소식(audio_session)을 직접 듣고 판단해요:
+```dart
+final player = AudioPlayer(handleInterruptions: false);
+
+session.becomingNoisyEventStream.listen((_) => pause());          // 블루투스·이어폰 빠짐
+session.devicesChangedEventStream.listen((e) {                     // 출력 기기 바뀜 (차 ↔ 폰)
+  routeChanged = true;
+  if (player.playing) pause();
+});
+session.interruptionEventStream.listen((e) {
+  if (e.begin && e.type == AudioInterruptionType.duck) player.setVolume(0.3);   // 내비 안내: 소리만 줄임
+  else if (e.begin) pause();                                                   // 다른 앱이 가져감: 멈춤
+  // 끝났다고(e.begin == false) 저절로 다시 재생하지 않음 — 겹침 방지
+});
+
+Future<void> play() async {
+  if (routeChanged) {
+    if (!await session.setActive(true)) return;      // 포커스 다시 요청, 못 받으면 재생 안 함
+    await player.setAudioSource(source, initialPosition: player.position);  // 새 출력 경로로 다시 열기
+  }
+  player.play();
+}
+```
+테스트에서는 audio_session 을 감싼 작은 클래스(`AudioFocus`)를 만들어 **가짜 소식**(끊김·포커스 상실·기기 변경)을 보내 확인해요.
+
+### 왜 그런가
+- 3D 비유: 렌더 팜에서 GPU 를 "예약" 한 작업만 렌더하는 것과 같아요. 예약(포커스)을 다른 작업에 넘겼으면 멈춰야 하고, 다시 쓰려면 다시 예약해야 해요. 예약 없이 계속 돌면 둘이 자원을 다투죠(소리 겹침).
+- 출력 기기가 바뀌면 소리가 나가는 길(경로)도 바뀌어요. 이미 열어 둔 소리 통로가 옛 길을 붙잡고 있으면 "재생 중인데 소리가 안 나는" 일이 생겨서, 같은 위치에서 새로 열어 줘요.
+- 자동 재개를 안 하는 이유: 사용자가 다른 앱으로 넘어갔는데 이 앱이 멋대로 다시 떠들면 겹치니까요. 다시 듣고 싶으면 재생 버튼을 누르면 돼요.
+
+> 💡 꿀팁 이런 일은 폰에서만 재현돼서 원인 찾기가 어려워요. 끊김·연결·포커스 상실·복귀·기기 변경을 **기록(로그)** 에 남겨 두면, 차에서 일이 생긴 뒤 '기록 복사' 로 무슨 순서로 일어났는지 볼 수 있어요.
+
+### 관련
+- 차·이어폰 재생 버튼이 다른 앱으로 갈 때 (미디어 세션)
+- 릴리스 빌드에서도 기록 남기기 — 최근 200줄 기록장
