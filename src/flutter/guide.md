@@ -831,3 +831,83 @@ Future<void> pause() { cancelResume('사용자가 멈춤'); return _pause(); }
 ### 관련
 - 차·이어폰 재생 버튼이 다른 앱으로 갈 때 (미디어 세션)
 - 릴리스 빌드에서도 기록 남기기 — 최근 200줄 기록장
+
+## 다른 앱으로 공유하기 — share_plus 와 가짜로 바꿔 끼우기 {#share-plus-injectable}
+
+> 🏷️ `flutter` `패키지` `테스트` `설계` · 📅 2026-11-19
+
+**한 줄 요약:** 안드로이드 공유 창은 `share_plus` 로 띄우는데, 버전마다 부르는 법이 다르니 **설치된 버전 문서**를 보고, 화면에는 직접 붙이지 말고 작은 인터페이스로 감싸 **생성자로 넣어 주면** 테스트에서 가짜로 바꿀 수 있다.
+
+### 문제 / 상황
+Fokus Player 에 "친구에게 에피소드 보내기" 를 넣었어요. 누르면 카카오톡·WhatsApp 을 고르는 안드로이드 공유 창이 떠야 해요. 그런데
+- 인터넷 예제마다 `Share.share(...)` 도 있고 `SharePlus.instance.share(...)` 도 있어요. 어느 쪽이 맞지?
+- 공유 창은 **진짜 폰에서만** 떠요. 테스트(PC)에서 "⋮ → 공유를 누르면 이 글이 나간다" 를 어떻게 확인하지?
+- 공유 창을 못 띄우는 경우(예외)도 처리해야 해요.
+
+### 해결
+**1. 버전부터 확인** — `flutter pub add share_plus --dry-run` 으로 내 Flutter 에 맞는 버전(13.3.1)을 보고, 그 버전의 CHANGELOG 를 읽었어요. 11.0 부터 `Share` 는 낡은 방식(deprecated)이 되고 `SharePlus.instance.share(ShareParams(...))` 로 바뀌었어요.
+
+**2. 작은 인터페이스로 감싸기**
+```dart
+abstract interface class Sharer {
+  Future<void> shareText(String text);
+}
+
+class SystemSharer implements Sharer {          // 진짜: 공유 창
+  const SystemSharer();
+  @override
+  Future<void> shareText(String text) async {
+    await SharePlus.instance.share(ShareParams(text: text));
+  }
+}
+```
+
+**3. 화면은 생성자로 받기 (기본값은 진짜)**
+```dart
+class PlayerScreen extends StatefulWidget {
+  final Sharer sharer;
+  const PlayerScreen({super.key, required this.player,
+                      this.sharer = const SystemSharer()});   // 앱에서는 안 넘겨도 진짜
+}
+```
+
+**4. 테스트에서는 가짜**
+```dart
+class FakeSharer implements Sharer {
+  final shared = <String>[];
+  bool fail = false;
+  @override
+  Future<void> shareText(String text) async {
+    if (fail) throw PlatformException(code: 'no_activity');   // 공유 창 실패 흉내
+    shared.add(text);                                          // 보낸 글을 모아 둠
+  }
+}
+// PlayerScreen(player: player, sharer: fake) → ⋮ → '공유' 탭 →
+expect(fake.shared, ['🎧 어린 왕자 1장\nhttps://x/b.mp3']);
+```
+
+**5. 실패하면 클립보드로**
+```dart
+try {
+  await sharer.shareText(text);
+} catch (e) {
+  await Clipboard.setData(ClipboardData(text: text));
+  messenger.showSnackBar(const SnackBar(content: Text('링크를 복사했어요')));
+}
+```
+
+**6. 보낼 글 만들기는 순수 함수로 따로** (`share_text.dart`) — 📖 접두어 빼기, 여러 개를 빈 줄로 잇기 같은 규칙은 화면 없이 바로 테스트 (판단과 동작 나누기).
+
+### 왜 그런가
+- 3D 비유: 무거운 하이폴리 모델 대신 뷰포트에서는 **프록시(대리) 메시**를 쓰잖아요. 모양(인터페이스)만 같으면 렌더할 때 진짜로 바꿔 끼워도 씬은 그대로예요. `Sharer` 가 그 "모양", `SystemSharer` 가 렌더용 진짜, `FakeSharer` 가 뷰포트용 프록시.
+- 화면이 `SharePlus.instance` 를 직접 부르면 테스트에서 뺄 방법이 없어요. **"무엇을 쓸지 밖에서 넣어 준다"** (주입) 고 하면 바꿔 끼울 자리가 생겨요. 기본값을 진짜로 두면 앱 코드(main.dart)는 고칠 필요도 없어요.
+- 패키지는 큰 버전(앞자리)이 바뀔 때 부르는 법이 바뀔 수 있어요. 예제 코드보다 **설치된 버전의 문서·CHANGELOG** 가 정답이에요.
+
+> ⚠️ 주의 공유하는 주소에 개인 토큰이 들어 있을 수 있으면(개인용 피드 등) 보내기 전에 한 번 물어보고, 기록(로그)에는 주소를 남기지 마세요. 기록을 복사해서 누군가에게 보여 주는 순간 토큰도 같이 나가요.
+
+> 💡 꿀팁 보낼 값은 **보내는 순간 DB 에서 다시 읽기**. 화면이 들고 있던 값은 열 때의 옛 값일 수 있어요 (피드 새로고침으로 MP3 주소가 바뀌는 경우).
+
+### 관련
+- 폰 없이 테스트하기 — 판단과 동작을 나누기
+- 오디오 포커스 — 다른 앱과 소리가 겹칠 때 (audio_session 을 감싼 것도 같은 생각)
+- 패키지 버전 충돌 (version solving failed)
